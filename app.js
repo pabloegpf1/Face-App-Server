@@ -5,6 +5,7 @@ const multer = require('multer');
 const faceApi = require('./faceApi.js');
 const constants = require('./constants.js');
 
+const PORT = process.env.PORT || 3000
 const upload = multer();
 
 faceApi.loadTensorFlow()
@@ -38,5 +39,5 @@ app.post('/recognize', upload.single(constants.IMAGE_KEY), async (req, res) => {
 })
 
 app.listen(constants.PORT, () => {
-  console.log(`App listening at http://localhost:${constants.PORT}`)
+  console.log(`App listening at http://localhost:${PORT}`)
 })

@@ -7,6 +7,5 @@ module.exports = {
     CANVAS_DISPLAY_WIDTH: 750,
     FACE_DETECTOR_INPUT_SIZE: 96,
     IMAGE_KEY: "image",
-    DESCRIPTORS_KEY: "descriptors",
-    PORT: 3000
+    DESCRIPTORS_KEY: "descriptors"
 }
