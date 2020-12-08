@@ -38,6 +38,6 @@ app.post('/recognize', upload.single(constants.IMAGE_KEY), async (req, res) => {
   res.send(recognitions);
 })
 
-app.listen(constants.PORT, () => {
+app.listen(PORT, () => {
   console.log(`App listening at http://localhost:${PORT}`)
 })
