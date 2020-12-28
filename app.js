@@ -17,7 +17,7 @@ app.get('/', async (req, res) => {
 const server = http.createServer(app);
 const io = require("socket.io")(server, {
   cors: {
-    origin: "https://www.pabloescriva.com/Face-App/",
+    origin: "https://www.pabloescriva.com/",
     methods: ["GET", "POST"]
   }
 });
