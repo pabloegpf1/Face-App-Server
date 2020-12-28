@@ -1,12 +1,9 @@
 const express = require('express');
+const http = require("http");
 const app = express();
-const multer = require('multer');
+const PORT = process.env.PORT || 4000;
 
 const faceApi = require('./faceApi.js');
-const constants = require('./constants.js');
-
-const PORT = process.env.PORT || 3000
-const upload = multer();
 
 faceApi.loadTensorFlow()
 .then(() => faceApi.loadFaceApi());
@@ -15,29 +12,42 @@ app.get('/', async (req, res) => {
   res.send("Welcome to Face App Rest API");
 })
 
-app.post('/loadDescriptors', upload.none(constants.DESCRIPTORS_KEY), async (req, res) => {
-  faceApi.loadLabeledFaceDescriptors(req.body[constants.DESCRIPTORS_KEY]);
-  res.sendStatus(200);
-})
+//Socket.io
 
-app.post('/detection', upload.single(constants.IMAGE_KEY), async (req, res) => {
-  const image = faceApi.image(req.file.buffer);
-  const detection = await faceApi.getDetectionForImage(image);
-  res.send(detection);
-})
+const server = http.createServer(app);
+const io = require("socket.io")(server, {
+  cors: {
+    origin: "https://www.pabloescriva.com/Face-App/",
+    methods: ["GET", "POST"]
+  }
+});
 
-app.post('/detections', upload.single(constants.IMAGE_KEY), async (req, res) => {
-  const image = faceApi.image(req.file.buffer);
-  const detections = await faceApi.getAllDetectionsForImage(image);
-  res.send(detections);
-})
+io.on("connection", (socket) => {
+  let labeledFaceDescriptors;
+  console.log("New client connected");
 
-app.post('/recognize', upload.single(constants.IMAGE_KEY), async (req, res) => {
-  const image = faceApi.image(req.file.buffer);
-  const recognitions = await faceApi.recognizeInImage(image);
-  res.send(recognitions);
-})
+  io.emit("getLabeledDescriptors");
 
-app.listen(PORT, () => {
+  socket.on("sendDescriptors", async data => {
+    const descriptors = await faceApi.loadLabeledFaceDescriptors(data);
+    labeledFaceDescriptors = descriptors;
+    console.log("descriptors received!; ", labeledFaceDescriptors);
+  });
+  
+  socket.on("sendImage", async (data, respond) => {
+    const detections = await faceApi.getAllDetectionsForImage(data);
+    if(detections.length == 0) return;
+    const recognitions = await faceApi.recognizeInImage(labeledFaceDescriptors, detections);
+    const canvas = await faceApi.createCanvasFromRecognitions(recognitions, detections);
+    respond({base64: canvas.toDataURL('image/png')});
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected");
+  });
+
+});
+
+server.listen(PORT, () => {
   console.log(`App listening at http://localhost:${PORT}`)
 })

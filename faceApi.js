@@ -1,14 +1,15 @@
-const tf = require('@tensorflow/tfjs-node')
 const faceapi = require('@vladmandic/face-api');
 const constants = require('./constants');
 const path = require('path');
+const canvas = require('canvas');
+const { Canvas, Image } = canvas;
 
 const faceDetectorOptions = {inputSize: constants.FACE_DETECTOR_INPUT_SIZE};
 const useTinyModel = true;
-let labeledFaceDescriptors = [];
 
-const loadTensorFlow = async () => {
+const loadTensorFlow = async () => {    
     await faceapi.tf.ready();
+    faceapi.env.monkeyPatch({ Canvas, Image });
     return faceapi.tf;
 }
 
@@ -31,30 +32,29 @@ const getLabeledDescriptors = async (label, images) => {
     labeledFaceDescriptors.push(newDescriptors);
 }
 
-async function getDetectionForImage(image) {
+const getDetectionForImage = async(image) => {
     return await faceapi
         .detectSingleFace(image, new faceapi.TinyFaceDetectorOptions(faceDetectorOptions))
         .withFaceLandmarks(useTinyModel)
         .withFaceDescriptor();
 }
 
-async function getAllDetectionsForImage(image) {
+const getAllDetectionsForImage = async (image) => {
     return await faceapi
-        .detectAllFaces(image, new faceapi.TinyFaceDetectorOptions(faceDetectorOptions))
+        .detectAllFaces(await canvas.loadImage(image), new faceapi.TinyFaceDetectorOptions(faceDetectorOptions))
         .withFaceLandmarks(useTinyModel)
         .withFaceDescriptors();
 }
 
-async function recognizeInImage(image) {
-    const detections = await getAllDetectionsForImage(image);
-    console.log(labeledFaceDescriptors);
+const recognizeInImage = async (labeledFaceDescriptors, detections) => {
     const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, constants.MAX_DESCRIPTOR_DISTANCE);
     return detections.map(detection =>
         faceMatcher.findBestMatch(detection.descriptor)
     );
 }
 
-async function loadLabeledFaceDescriptors(descriptors) {
+const loadLabeledFaceDescriptors = async (descriptors) => {
+    const labeledFaceDescriptors = [];
     const loadedDescriptors = await JSON.parse(descriptors);
     if(!loadedDescriptors) return;
     await loadedDescriptors.map(async (subject) => {
@@ -64,15 +64,19 @@ async function loadLabeledFaceDescriptors(descriptors) {
         );
         labeledFaceDescriptors.push(newSubject);
     });
+    return labeledFaceDescriptors;
 }
 
-const image = (image) => {
-    const decoded = tf.node.decodeImage(image);
-    const casted = decoded.toFloat();
-    const result = casted.expandDims(0);
-    decoded.dispose();
-    casted.dispose();
-    return result;
+const createCanvasFromRecognitions = async (recognitions, detections) => {
+    const canvas = new Canvas();
+    canvas.height = 300;
+    canvas.width = 300;
+    await recognitions.forEach((detection, i) => {      
+        const text = detection.toString();
+        const drawBox = new faceapi.draw.DrawBox(detections[i].detection._box, { label: text });
+        drawBox.draw(canvas);
+    });
+    return canvas;
 }
 
 module.exports = {
@@ -83,5 +87,5 @@ module.exports = {
     getLabeledDescriptors,
     recognizeInImage,
     loadLabeledFaceDescriptors,
-    image
+    createCanvasFromRecognitions
  }
