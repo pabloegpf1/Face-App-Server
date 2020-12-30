@@ -7,5 +7,8 @@ module.exports = {
     CANVAS_DISPLAY_WIDTH: 750,
     FACE_DETECTOR_INPUT_SIZE: 96,
     IMAGE_KEY: "image",
-    DESCRIPTORS_KEY: "descriptors"
+    DESCRIPTORS_KEY: "descriptors",
+    CLIENT_URL: "https://www.pabloescriva.com",
+    CLIENT_URL_DEV: "http://localhost:3000",
+    DEFAULT_PORT: 4000
 }
