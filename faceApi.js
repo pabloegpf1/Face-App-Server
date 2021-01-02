@@ -67,15 +67,27 @@ const loadLabeledFaceDescriptors = async (descriptors) => {
     return labeledFaceDescriptors;
 }
 
-const createCanvasFromRecognitions = async (recognitions, detections) => {
-    const canvas = new Canvas();
-    canvas.height = 300;
-    canvas.width = 300;
+const drawRecognitionsInCanvas = async (recognitions, detections) => {
+    const canvas = createCanvas();
     await recognitions.forEach((detection, i) => {      
         const text = detection.toString();
         const drawBox = new faceapi.draw.DrawBox(detections[i].detection._box, { label: text });
         drawBox.draw(canvas);
     });
+    return canvas;
+}
+
+const drawDetectionsInCanvas = async (detections) => {
+    const canvas = createCanvas();
+    faceapi.draw.drawDetections(canvas, detections);
+    faceapi.draw.drawFaceLandmarks(canvas, detections);
+    return canvas;
+}
+
+const createCanvas = () => {
+    const canvas = new Canvas();
+    canvas.height = 300;
+    canvas.width = 300;
     return canvas;
 }
 
@@ -87,5 +99,6 @@ module.exports = {
     getLabeledDescriptors,
     recognizeInImage,
     loadLabeledFaceDescriptors,
-    createCanvasFromRecognitions
+    drawRecognitionsInCanvas,
+    drawDetectionsInCanvas
  }

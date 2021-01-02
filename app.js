@@ -34,18 +34,20 @@ io.on("connection", (socket) => {
   });
   
   socket.on("recognize", async (data, respond) => {
-    const detections = await faceApi.getAllDetectionsForImage(data.base64image);
-    if(detections){
-      const recognitions = await faceApi.recognizeInImage(labeledFaceDescriptors, detections);
-      const canvas = await faceApi.createCanvasFromRecognitions(recognitions, detections);
-      respond({
-        success: recognitions.length > 0, 
-        base64canvas: canvas.toDataURL('image/png'), 
-        initialTime: data.initialTime
-      });
-    } else {
-      respond({success: false});
+    let detections, recognitions, canvas;
+    detections = await faceApi.getAllDetectionsForImage(data.base64image);
+    if(detections.length == 0) respond({success: false});
+    try {
+      recognitions = await faceApi.recognizeInImage(labeledFaceDescriptors, detections);
+      canvas = await faceApi.drawRecognitionsInCanvas(recognitions, detections);
+    } catch (error) {
+      canvas = await faceApi.drawDetectionsInCanvas(detections);
     }
+    respond({
+      success: true, 
+      base64canvas: canvas.toDataURL('image/png'), 
+      initialTime: data.initialTime
+    });
   });
 
   socket.on("disconnect", () => {
